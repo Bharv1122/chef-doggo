@@ -85,3 +85,7 @@
 - [x] Easy-to-tap form elements
 - [ ] Swipe gestures where appropriate
 - [x] Camera access for mobile kibble label upload
+
+
+## New Feature Requests
+- [x] Add demo video of dog cooking to landing page

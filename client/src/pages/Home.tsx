@@ -2,11 +2,25 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
-import { Camera, ChefHat, Heart, Leaf, RefreshCw, Shield, Sparkles, Upload, UtensilsCrossed } from "lucide-react";
+import { Camera, ChefHat, Heart, Leaf, Play, RefreshCw, Shield, Sparkles, Upload, UtensilsCrossed } from "lucide-react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleVideo = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsVideoPlaying(!isVideoPlaying);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -239,6 +253,56 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Demo Video Section */}
+      <section className="py-16 md:py-24 bg-card">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Watch Chef Doggo in Action
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              See how easy it is to create delicious, nutritious meals for your furry friend
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black">
+              <video
+                ref={videoRef}
+                src="/videos/dog-cooking.mp4"
+                className="w-full aspect-video"
+                loop
+                playsInline
+                onPlay={() => setIsVideoPlaying(true)}
+                onPause={() => setIsVideoPlaying(false)}
+              />
+              
+              {!isVideoPlaying && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer transition-opacity hover:bg-black/20"
+                  onClick={toggleVideo}
+                >
+                  <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110">
+                    <Play className="w-10 h-10 text-white ml-1" fill="white" />
+                  </div>
+                </div>
+              )}
+              
+              {isVideoPlaying && (
+                <div 
+                  className="absolute inset-0 cursor-pointer"
+                  onClick={toggleVideo}
+                />
+              )}
+            </div>
+            
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              🎬 Chef Doggo demonstrating the art of canine cuisine
+            </p>
           </div>
         </div>
       </section>
