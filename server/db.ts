@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, dogProfiles, savedRecipes, InsertDogProfile, InsertSavedRecipe } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,86 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ============ Dog Profile Functions ============
+
+export async function createDogProfile(data: Omit<InsertDogProfile, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(dogProfiles).values(data);
+  const insertId = result[0].insertId;
+  return getDogProfileById(insertId);
+}
+
+export async function getDogProfiles(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(dogProfiles).where(eq(dogProfiles.userId, userId));
+}
+
+export async function getDogProfileById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(dogProfiles).where(eq(dogProfiles.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateDogProfile(id: number, data: Partial<Omit<InsertDogProfile, "id" | "userId" | "createdAt">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(dogProfiles).set(data).where(eq(dogProfiles.id, id));
+  return getDogProfileById(id);
+}
+
+export async function deleteDogProfile(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(dogProfiles).where(eq(dogProfiles.id, id));
+  return { success: true };
+}
+
+// ============ Recipe Functions ============
+
+export async function createRecipe(data: Omit<InsertSavedRecipe, "id" | "createdAt" | "isFavorite" | "rating" | "notes">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(savedRecipes).values(data);
+  const insertId = result[0].insertId;
+  return getRecipeById(insertId);
+}
+
+export async function getRecipes(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(savedRecipes).where(eq(savedRecipes.userId, userId));
+}
+
+export async function getRecipeById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(savedRecipes).where(eq(savedRecipes.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateRecipe(id: number, data: Partial<Omit<InsertSavedRecipe, "id" | "userId" | "dogProfileId" | "createdAt">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(savedRecipes).set(data).where(eq(savedRecipes.id, id));
+  return getRecipeById(id);
+}
+
+export async function deleteRecipe(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(savedRecipes).where(eq(savedRecipes.id, id));
+  return { success: true };
+}
