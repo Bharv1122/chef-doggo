@@ -5,11 +5,94 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Camera, ChefHat, Dog, Loader2, RefreshCw, Shield, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, Camera, ChefHat, Dog, Loader2, RefreshCw, Shield, Sparkles, Upload, Scale, DollarSign, ShoppingCart } from "lucide-react";
 import { useCallback, useState, useRef } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { DogProfile } from "../../../drizzle/schema";
+
+// Average ingredient prices (USD per unit)
+const INGREDIENT_PRICES: Record<string, { pricePerUnit: number; unit: string }> = {
+  // Proteins
+  'ground beef': { pricePerUnit: 5.99, unit: 'pound' },
+  'beef': { pricePerUnit: 5.99, unit: 'pound' },
+  'chicken': { pricePerUnit: 3.99, unit: 'pound' },
+  'chicken breast': { pricePerUnit: 4.99, unit: 'pound' },
+  'salmon': { pricePerUnit: 9.99, unit: 'pound' },
+  'fish': { pricePerUnit: 7.99, unit: 'pound' },
+  'turkey': { pricePerUnit: 4.49, unit: 'pound' },
+  'lamb': { pricePerUnit: 8.99, unit: 'pound' },
+  'eggs': { pricePerUnit: 0.30, unit: 'each' },
+  // Vegetables
+  'sweet potato': { pricePerUnit: 1.29, unit: 'pound' },
+  'green beans': { pricePerUnit: 2.49, unit: 'pound' },
+  'carrots': { pricePerUnit: 1.49, unit: 'pound' },
+  'spinach': { pricePerUnit: 3.99, unit: 'pound' },
+  'pumpkin': { pricePerUnit: 2.99, unit: 'can' },
+  'peas': { pricePerUnit: 1.99, unit: 'pound' },
+  'broccoli': { pricePerUnit: 2.49, unit: 'pound' },
+  'zucchini': { pricePerUnit: 1.79, unit: 'pound' },
+  // Carbs
+  'brown rice': { pricePerUnit: 2.99, unit: 'pound' },
+  'rice': { pricePerUnit: 2.49, unit: 'pound' },
+  'oatmeal': { pricePerUnit: 3.99, unit: 'pound' },
+  'quinoa': { pricePerUnit: 5.99, unit: 'pound' },
+  'pasta': { pricePerUnit: 1.49, unit: 'pound' },
+  // Fats & Oils
+  'olive oil': { pricePerUnit: 0.50, unit: 'tablespoon' },
+  'coconut oil': { pricePerUnit: 0.40, unit: 'tablespoon' },
+  'fish oil': { pricePerUnit: 0.15, unit: 'capsule' },
+  // Supplements
+  'calcium': { pricePerUnit: 0.10, unit: 'dose' },
+  'multivitamin': { pricePerUnit: 0.25, unit: 'dose' },
+};
+
+function calculateRecipeCost(ingredients: any[]): number {
+  let totalCost = 0;
+  
+  for (const ing of ingredients) {
+    const name = ing.name?.toLowerCase() || '';
+    const amount = parseFloat(ing.amount) || 0;
+    const unit = ing.unit?.toLowerCase() || '';
+    
+    // Find matching price
+    let priceInfo = null;
+    for (const [key, value] of Object.entries(INGREDIENT_PRICES)) {
+      if (name.includes(key)) {
+        priceInfo = value;
+        break;
+      }
+    }
+    
+    if (priceInfo) {
+      // Convert units and calculate cost
+      let costMultiplier = amount;
+      
+      // Handle unit conversions
+      if (unit === 'cup' || unit === 'cups') {
+        // Approximate: 1 cup = 0.5 lbs for most ingredients
+        if (priceInfo.unit === 'pound') {
+          costMultiplier = amount * 0.5;
+        }
+      } else if (unit === 'tablespoon' || unit === 'tablespoons') {
+        if (priceInfo.unit === 'tablespoon') {
+          costMultiplier = amount;
+        }
+      } else if (unit === 'pound' || unit === 'pounds' || unit === 'lb' || unit === 'lbs') {
+        costMultiplier = amount;
+      } else if (unit === 'mg' || unit === 'dose') {
+        costMultiplier = 1; // Per dose
+      }
+      
+      totalCost += priceInfo.pricePerUnit * costMultiplier;
+    } else {
+      // Default estimate for unknown ingredients
+      totalCost += 1.00;
+    }
+  }
+  
+  return totalCost;
+}
 
 export default function Generate() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -25,6 +108,7 @@ export default function Generate() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState<any>(null);
   const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
+  const [batchMultiplier, setBatchMultiplier] = useState(1);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -390,13 +474,42 @@ export default function Generate() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Batch Scaling */}
+                    <div className="bg-secondary/10 border border-secondary/20 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-secondary flex items-center gap-2">
+                          <Scale className="w-4 h-4" />
+                          Batch Size
+                        </h3>
+                        <div className="flex gap-2">
+                          {[1, 2, 3, 4].map((mult) => (
+                            <Button
+                              key={mult}
+                              variant={batchMultiplier === mult ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setBatchMultiplier(mult)}
+                              className={batchMultiplier === mult ? "bg-secondary hover:bg-secondary/90" : ""}
+                            >
+                              {mult}x
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {batchMultiplier === 1 
+                          ? "Single batch - enough for 1 day"
+                          : `${batchMultiplier}x batch - enough for ${batchMultiplier * (generatedRecipe.servingInfo?.daysThisRecipeLasts || 1)} days of meals`
+                        }
+                      </p>
+                    </div>
+
                     {/* Serving Info */}
                     {generatedRecipe.servingInfo && (
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                         <h3 className="font-bold text-primary mb-2">Serving Information</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                           <div>
-                            <p className="font-bold text-xl text-primary">{generatedRecipe.servingInfo.totalCups}</p>
+                            <p className="font-bold text-xl text-primary">{(generatedRecipe.servingInfo.totalCups * batchMultiplier).toFixed(1)}</p>
                             <p className="text-xs text-muted-foreground">total cups</p>
                           </div>
                           <div>
@@ -408,10 +521,43 @@ export default function Generate() {
                             <p className="text-xs text-muted-foreground">meals/day</p>
                           </div>
                           <div>
-                            <p className="font-bold text-xl">{generatedRecipe.servingInfo.daysThisRecipeLasts}</p>
+                            <p className="font-bold text-xl">{(generatedRecipe.servingInfo.daysThisRecipeLasts || 1) * batchMultiplier}</p>
                             <p className="text-xs text-muted-foreground">days batch</p>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Cost Estimation */}
+                    {generatedRecipe.ingredients && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          Estimated Cost
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-center">
+                          <div>
+                            <p className="font-bold text-xl text-green-700">
+                              ${(calculateRecipeCost(generatedRecipe.ingredients) * batchMultiplier).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-green-600">total batch</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl text-green-700">
+                              ${(calculateRecipeCost(generatedRecipe.ingredients) / (generatedRecipe.servingInfo?.mealsPerDay || 2)).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-green-600">per meal</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl text-green-700">
+                              ${calculateRecipeCost(generatedRecipe.ingredients).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-green-600">per day</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-green-600 mt-2 text-center">
+                          *Estimates based on average US grocery prices
+                        </p>
                       </div>
                     )}
 
@@ -439,31 +585,42 @@ export default function Generate() {
 
                     {/* Ingredients */}
                     <div>
-                      <h3 className="font-bold mb-3">Ingredients</h3>
+                      <h3 className="font-bold mb-3 flex items-center gap-2">
+                        Ingredients
+                        {batchMultiplier > 1 && (
+                          <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
+                            {batchMultiplier}x scaled
+                          </span>
+                        )}
+                      </h3>
                       <ul className="space-y-2">
-                        {generatedRecipe.ingredients?.map((ing: any, i: number) => (
-                          <li key={i} className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${
-                                ing.category === 'protein' ? 'bg-primary' :
-                                ing.category === 'vegetable' ? 'bg-secondary' :
-                                ing.category === 'carb' ? 'bg-accent' :
-                                ing.category === 'fat' ? 'bg-yellow-500' :
-                                'bg-muted-foreground'
-                              }`} />
-                              <span>{ing.amount} {ing.unit} {ing.name}</span>
-                            </div>
-                            {ing.volumeCups && (
-                              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                                {ing.volumeCups} cups
-                              </span>
-                            )}
-                          </li>
-                        ))}
+                        {generatedRecipe.ingredients?.map((ing: any, i: number) => {
+                          const scaledAmount = parseFloat(ing.amount) * batchMultiplier;
+                          const displayAmount = scaledAmount % 1 === 0 ? scaledAmount : scaledAmount.toFixed(2);
+                          return (
+                            <li key={i} className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${
+                                  ing.category === 'protein' ? 'bg-primary' :
+                                  ing.category === 'vegetable' ? 'bg-secondary' :
+                                  ing.category === 'carb' ? 'bg-accent' :
+                                  ing.category === 'fat' ? 'bg-yellow-500' :
+                                  'bg-muted-foreground'
+                                }`} />
+                                <span>{displayAmount} {ing.unit} {ing.name}</span>
+                              </div>
+                              {ing.volumeCups && (
+                                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                  {(parseFloat(ing.volumeCups) * batchMultiplier).toFixed(1)} cups
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                       {generatedRecipe.totalVolumeCups && (
                         <p className="text-sm text-muted-foreground mt-3 pt-3 border-t">
-                          <strong>Total Volume:</strong> {generatedRecipe.totalVolumeCups} cups
+                          <strong>Total Volume:</strong> {(parseFloat(generatedRecipe.totalVolumeCups) * batchMultiplier).toFixed(1)} cups
                         </p>
                       )}
                     </div>

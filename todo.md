@@ -173,3 +173,10 @@
 - **Description:** Recipe ingredients total ~9 cups but should equal the dog's daily serving size (e.g., 14 cups for larger dogs)
 - **Root Cause:** AI prompt doesn't specify exact volume targets or calculate portions based on calorie density
 - **Fix:** Update recipe generation prompt to calculate portions based on dog's daily calorie needs and ensure total volume is appropriate
+
+
+## Current Sprint (Dec 25, 2024)
+
+- [x] Test recipe generation with real dog profile
+- [x] Add batch scaling feature (2x, 3x, 4x multipliers for meal prep)
+- [x] Add cost estimation per meal based on average ingredient prices
