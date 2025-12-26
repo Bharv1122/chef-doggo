@@ -39,6 +39,15 @@ export const dogProfiles = mysqlTable("dog_profiles", {
   healthConditions: text("healthConditions"), // JSON string array
   dailyCalories: int("dailyCalories"),
   photoUrl: text("photoUrl"),
+  
+  // Holistic Nutrition Philosophy Fields
+  tcvmConstitution: varchar("tcvmConstitution", { length: 50 }), // fire, earth, metal, water, wood
+  tcvmFoodEnergetics: varchar("tcvmFoodEnergetics", { length: 50 }), // warming, cooling, neutral
+  ayurvedicDosha: varchar("ayurvedicDosha", { length: 50 }), // vata, pitta, kapha, vata-pitta, pitta-kapha, vata-kapha
+  nutritionPhilosophy: varchar("nutritionPhilosophy", { length: 100 }).default("balanced"), // balanced, barf, prey-model, rotational, functional
+  preferRawFood: boolean("preferRawFood").default(false),
+  conditionDiet: varchar("conditionDiet", { length: 100 }), // anti-inflammatory, ketogenic, renal, cardiac, diabetic
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -68,6 +77,10 @@ export const savedRecipes = mysqlTable("saved_recipes", {
   isFavorite: boolean("isFavorite").default(false),
   rating: int("rating"),
   notes: text("notes"),
+  
+  // Nutrition method used for this recipe
+  nutritionMethods: text("nutritionMethods"), // JSON array of methods used
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -80,6 +93,9 @@ export interface RecipeIngredient {
   amount: string;
   unit: string;
   category: "protein" | "vegetable" | "carb" | "supplement" | "other";
+  volume?: string; // Volume contribution in cups
+  tcvmEnergy?: "warming" | "cooling" | "neutral";
+  ayurvedicEffect?: string;
 }
 
 export interface RecipeInstruction {
@@ -92,10 +108,29 @@ export interface RecipeNutrition {
   protein: number;
   fat: number;
   carbohydrates: number;
+  fiber?: number;
+  calcium?: number;
+  phosphorus?: number;
 }
 
 export interface RecipeSupplement {
   name: string;
   amount: string;
   reason: string;
+  purchaseLink?: string;
 }
+
+// TCVM Constitution Types
+export type TCVMConstitution = "fire" | "earth" | "metal" | "water" | "wood";
+
+// Ayurvedic Dosha Types
+export type AyurvedicDosha = "vata" | "pitta" | "kapha" | "vata-pitta" | "pitta-kapha" | "vata-kapha";
+
+// Food Energetics
+export type FoodEnergetics = "warming" | "cooling" | "neutral";
+
+// Nutrition Philosophy
+export type NutritionPhilosophy = "balanced" | "barf" | "prey-model" | "rotational" | "functional";
+
+// Condition-Specific Diets
+export type ConditionDiet = "anti-inflammatory" | "ketogenic" | "renal" | "cardiac" | "diabetic" | "elimination";

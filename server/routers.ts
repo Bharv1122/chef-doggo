@@ -16,6 +16,29 @@ import {
   deleteRecipe
 } from "./db";
 
+// Shared schema for dog profile fields
+const dogProfileFields = {
+  name: z.string().min(1).max(100),
+  breed: z.string().max(100).nullable().optional(),
+  weightLbs: z.number().min(1).max(300),
+  ageYears: z.number().min(0).max(25),
+  ageMonths: z.number().min(0).max(11).optional(),
+  sizeCategory: z.enum(["toy", "small", "medium", "large", "giant"]),
+  lifeStage: z.enum(["puppy", "adult", "senior"]),
+  activityLevel: z.enum(["sedentary", "moderate", "active", "very_active"]),
+  allergies: z.array(z.string()).optional(),
+  dietaryRestrictions: z.array(z.string()).optional(),
+  healthConditions: z.array(z.string()).optional(),
+  dailyCalories: z.number().optional(),
+  // Holistic nutrition fields
+  tcvmConstitution: z.string().max(50).nullable().optional(),
+  tcvmFoodEnergetics: z.string().max(50).nullable().optional(),
+  ayurvedicDosha: z.string().max(50).nullable().optional(),
+  nutritionPhilosophy: z.string().max(100).optional(),
+  preferRawFood: z.boolean().optional(),
+  conditionDiet: z.string().max(100).nullable().optional(),
+};
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -43,20 +66,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
-      .input(z.object({
-        name: z.string().min(1).max(100),
-        breed: z.string().max(100).nullable().optional(),
-        weightLbs: z.number().min(1).max(300),
-        ageYears: z.number().min(0).max(25),
-        ageMonths: z.number().min(0).max(11).optional(),
-        sizeCategory: z.enum(["toy", "small", "medium", "large", "giant"]),
-        lifeStage: z.enum(["puppy", "adult", "senior"]),
-        activityLevel: z.enum(["sedentary", "moderate", "active", "very_active"]),
-        allergies: z.array(z.string()).optional(),
-        dietaryRestrictions: z.array(z.string()).optional(),
-        healthConditions: z.array(z.string()).optional(),
-        dailyCalories: z.number().optional(),
-      }))
+      .input(z.object(dogProfileFields))
       .mutation(async ({ ctx, input }) => {
         return createDogProfile({
           userId: ctx.user.id,
@@ -72,25 +82,18 @@ export const appRouter = router({
           dietaryRestrictions: input.dietaryRestrictions ? JSON.stringify(input.dietaryRestrictions) : null,
           healthConditions: input.healthConditions ? JSON.stringify(input.healthConditions) : null,
           dailyCalories: input.dailyCalories || null,
+          // Holistic nutrition fields
+          tcvmConstitution: input.tcvmConstitution || null,
+          tcvmFoodEnergetics: input.tcvmFoodEnergetics || null,
+          ayurvedicDosha: input.ayurvedicDosha || null,
+          nutritionPhilosophy: input.nutritionPhilosophy || "balanced",
+          preferRawFood: input.preferRawFood || false,
+          conditionDiet: input.conditionDiet || null,
         });
       }),
     
     update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().min(1).max(100),
-        breed: z.string().max(100).nullable().optional(),
-        weightLbs: z.number().min(1).max(300),
-        ageYears: z.number().min(0).max(25),
-        ageMonths: z.number().min(0).max(11).optional(),
-        sizeCategory: z.enum(["toy", "small", "medium", "large", "giant"]),
-        lifeStage: z.enum(["puppy", "adult", "senior"]),
-        activityLevel: z.enum(["sedentary", "moderate", "active", "very_active"]),
-        allergies: z.array(z.string()).optional(),
-        dietaryRestrictions: z.array(z.string()).optional(),
-        healthConditions: z.array(z.string()).optional(),
-        dailyCalories: z.number().optional(),
-      }))
+      .input(z.object({ id: z.number(), ...dogProfileFields }))
       .mutation(async ({ ctx, input }) => {
         const existing = await getDogProfileById(input.id);
         if (!existing || existing.userId !== ctx.user.id) {
@@ -109,6 +112,13 @@ export const appRouter = router({
           dietaryRestrictions: input.dietaryRestrictions ? JSON.stringify(input.dietaryRestrictions) : null,
           healthConditions: input.healthConditions ? JSON.stringify(input.healthConditions) : null,
           dailyCalories: input.dailyCalories || null,
+          // Holistic nutrition fields
+          tcvmConstitution: input.tcvmConstitution || null,
+          tcvmFoodEnergetics: input.tcvmFoodEnergetics || null,
+          ayurvedicDosha: input.ayurvedicDosha || null,
+          nutritionPhilosophy: input.nutritionPhilosophy || "balanced",
+          preferRawFood: input.preferRawFood || false,
+          conditionDiet: input.conditionDiet || null,
         });
       }),
     

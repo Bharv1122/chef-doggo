@@ -180,3 +180,42 @@
 - [x] Test recipe generation with real dog profile
 - [x] Add batch scaling feature (2x, 3x, 4x multipliers for meal prep)
 - [x] Add cost estimation per meal based on average ingredient prices
+
+
+## New Feature: TCVM Integration (Dec 26, 2024)
+
+- [x] Research Traditional Chinese Veterinary Medicine (TCVM) food therapy principles
+- [x] Add TCVM knowledge to canine nutrition knowledge base
+- [x] Add constitution/body type selection to dog profile form (Hot, Cold, Damp, Dry, etc.)
+- [x] Update recipe generation prompts to include TCVM food energetics
+- [x] Add TCVM-based food recommendations (warming, cooling, neutral foods)
+- [x] Display TCVM insights in generated recipes
+
+
+## Comprehensive Nutrition Methods Integration (Dec 26, 2024)
+
+### Holistic/Alternative Approaches
+- [x] TCVM (Traditional Chinese Veterinary Medicine) - Five Elements, Food Energetics
+- [x] Ayurvedic Veterinary Medicine - Doshas (Vata, Pitta, Kapha)
+- [x] Raw Food / BARF Diet principles
+- [x] Rotational Feeding methodology
+- [x] Functional Foods integration
+
+### Science-Based Approaches
+- [x] NRC Guidelines compliance
+- [x] Life Stage Nutrition (puppy, adult, senior, pregnant/lactating)
+- [x] Breed-Specific Nutrition requirements
+
+### Condition-Specific Approaches
+- [x] Anti-Inflammatory Diet protocols
+- [x] Ketogenic Diet support
+- [x] Renal Diet formulations
+- [x] Cardiac Diet guidelines
+
+### Implementation Tasks
+- [x] Research and compile knowledge base for all methods
+- [x] Update database schema for multi-method profiles
+- [x] Update dog profile form with method selection
+- [x] Update recipe generation AI prompts
+- [x] Add method-specific recommendations to recipe output
+- [x] Write tests for new functionality

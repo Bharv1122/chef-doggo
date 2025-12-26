@@ -647,14 +647,100 @@ export default function Generate() {
                           <Shield className="w-4 h-4" />
                           Required Supplements
                         </h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-3">
                           {generatedRecipe.supplements.map((sup: any, i: number) => (
                             <li key={i} className="text-amber-700">
-                              <span className="font-medium">{sup.name}</span> - {sup.amount}
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{sup.name}</span>
+                                <span className="text-sm">{sup.amount}</span>
+                              </div>
                               <p className="text-sm text-amber-600">{sup.reason}</p>
+                              {sup.purchaseLink && (
+                                <a 
+                                  href={`https://www.chewy.com/s?query=${encodeURIComponent(sup.purchaseLink)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
+                                >
+                                  <ShoppingCart className="w-3 h-3" />
+                                  Buy on Chewy
+                                </a>
+                              )}
                             </li>
                           ))}
                         </ul>
+                      </div>
+                    )}
+
+                    {/* Functional Foods */}
+                    {generatedRecipe.functionalFoods && generatedRecipe.functionalFoods.length > 0 && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <h3 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          Functional Foods & Superfoods
+                        </h3>
+                        <ul className="space-y-2">
+                          {generatedRecipe.functionalFoods.map((food: any, i: number) => (
+                            <li key={i} className="text-purple-700">
+                              <span className="font-medium">{food.name}</span>
+                              {food.amount && <span className="text-sm"> - {food.amount}</span>}
+                              <p className="text-sm text-purple-600">{food.benefit}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Holistic Notes */}
+                    {generatedRecipe.holisticNotes && (
+                      <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                        <h3 className="font-bold text-teal-800 mb-3">Holistic Nutrition Notes</h3>
+                        <div className="space-y-3 text-sm text-teal-700">
+                          {generatedRecipe.holisticNotes.tcvmAnalysis && generatedRecipe.holisticNotes.tcvmAnalysis !== 'N/A' && (
+                            <div>
+                              <p className="font-medium text-teal-800">TCVM Analysis:</p>
+                              <p>{generatedRecipe.holisticNotes.tcvmAnalysis}</p>
+                            </div>
+                          )}
+                          {generatedRecipe.holisticNotes.ayurvedicAnalysis && generatedRecipe.holisticNotes.ayurvedicAnalysis !== 'N/A' && (
+                            <div>
+                              <p className="font-medium text-teal-800">Ayurvedic Analysis:</p>
+                              <p>{generatedRecipe.holisticNotes.ayurvedicAnalysis}</p>
+                            </div>
+                          )}
+                          {generatedRecipe.holisticNotes.therapeuticNotes && generatedRecipe.holisticNotes.therapeuticNotes !== 'N/A' && (
+                            <div>
+                              <p className="font-medium text-teal-800">Therapeutic Notes:</p>
+                              <p>{generatedRecipe.holisticNotes.therapeuticNotes}</p>
+                            </div>
+                          )}
+                          {generatedRecipe.holisticNotes.seasonalAdjustments && generatedRecipe.holisticNotes.seasonalAdjustments !== 'N/A' && (
+                            <div>
+                              <p className="font-medium text-teal-800">Seasonal Adjustments:</p>
+                              <p>{generatedRecipe.holisticNotes.seasonalAdjustments}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Storage & Transition */}
+                    {(generatedRecipe.storageInstructions || generatedRecipe.transitionGuide) && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="space-y-3 text-sm">
+                          {generatedRecipe.storageInstructions && (
+                            <div>
+                              <p className="font-medium text-gray-800">Storage Instructions:</p>
+                              <p className="text-gray-600">{generatedRecipe.storageInstructions}</p>
+                            </div>
+                          )}
+                          {generatedRecipe.transitionGuide && (
+                            <div>
+                              <p className="font-medium text-gray-800">Diet Transition Guide:</p>
+                              <p className="text-gray-600">{generatedRecipe.transitionGuide}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 

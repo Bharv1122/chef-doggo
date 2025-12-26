@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE dog_profiles \nADD COLUMN tcvmConstitution VARCHAR(50) DEFAULT NULL,\nADD COLUMN tcvmFoodEnergetics VARCHAR(50) DEFAULT NULL,\nADD COLUMN ayurvedicDosha VARCHAR(50) DEFAULT NULL,\nADD COLUMN nutritionPhilosophy VARCHAR(100) DEFAULT 'balanced',\nADD COLUMN preferRawFood BOOLEAN DEFAULT FALSE,\nADD COLUMN conditionDiet VARCHAR(100) DEFAULT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3tGDFpxTYBuxkSM.665aee9f7b84 --database J86TCgpwy73EpMPcdSysqT --execute ALTER TABLE dog_profiles \nADD COLUMN tcvmConstitution VARCHAR(50) DEFAULT NULL,\nADD COLUMN tcvmFoodEnergetics VARCHAR(50) DEFAULT NULL,\nADD COLUMN ayurvedicDosha VARCHAR(50) DEFAULT NULL,\nADD COLUMN nutritionPhilosophy VARCHAR(100) DEFAULT 'balanced',\nADD COLUMN preferRawFood BOOLEAN DEFAULT FALSE,\nADD COLUMN conditionDiet VARCHAR(100) DEFAULT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 4696
+}

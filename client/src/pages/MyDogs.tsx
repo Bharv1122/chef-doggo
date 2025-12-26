@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Dog, Plus, Trash2, Edit, Loader2 } from "lucide-react";
+import { ArrowLeft, Dog, Plus, Trash2, Edit, Loader2, HelpCircle, Leaf, Flame, Droplets, Mountain, TreePine } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -27,6 +29,45 @@ const BREEDS = [
   "Siberian Husky", "Great Dane", "Doberman", "Australian Shepherd", "Cavalier King Charles",
   "Shih Tzu", "Boston Terrier", "Pomeranian", "Chihuahua", "Border Collie", "Corgi",
   "Australian Cattle Dog", "Other"
+];
+
+// TCVM Five Element Constitutions
+const TCVM_CONSTITUTIONS = [
+  { value: "fire", label: "Fire 🔥", icon: Flame, description: "Outgoing, loves attention, excitable, may have heart/anxiety issues" },
+  { value: "earth", label: "Earth 🌍", icon: Mountain, description: "Loyal, nurturing, food-motivated, may have digestive/weight issues" },
+  { value: "metal", label: "Metal ⚪", icon: Mountain, description: "Confident, aloof, rule-follower, may have skin/respiratory issues" },
+  { value: "water", label: "Water 💧", icon: Droplets, description: "Fearful, cautious, introverted, may have kidney/bone issues" },
+  { value: "wood", label: "Wood 🌲", icon: TreePine, description: "Assertive, athletic, competitive, may have tendon/eye issues" },
+];
+
+// Ayurvedic Doshas
+const AYURVEDIC_DOSHAS = [
+  { value: "vata", label: "Vata (Air/Space)", description: "Thin, nervous, dry skin, cold intolerant, irregular digestion" },
+  { value: "pitta", label: "Pitta (Fire/Water)", description: "Medium build, hot-natured, strong digestion, prone to inflammation" },
+  { value: "kapha", label: "Kapha (Earth/Water)", description: "Heavy build, calm, slow metabolism, prone to weight gain" },
+  { value: "vata-pitta", label: "Vata-Pitta", description: "Mix of Vata and Pitta characteristics" },
+  { value: "pitta-kapha", label: "Pitta-Kapha", description: "Mix of Pitta and Kapha characteristics" },
+  { value: "vata-kapha", label: "Vata-Kapha", description: "Mix of Vata and Kapha characteristics" },
+];
+
+// Nutrition Philosophies
+const NUTRITION_PHILOSOPHIES = [
+  { value: "balanced", label: "Balanced (AAFCO/NRC)", description: "Science-based nutrition meeting all AAFCO guidelines" },
+  { value: "barf", label: "BARF Diet", description: "Biologically Appropriate Raw Food - 70% meat, 10% bone, 7% veg" },
+  { value: "prey-model", label: "Prey Model Raw", description: "80% meat, 10% bone, 10% organs - mimics whole prey" },
+  { value: "rotational", label: "Rotational Feeding", description: "Rotating proteins and ingredients for variety" },
+  { value: "functional", label: "Functional Foods", description: "Focus on foods with specific health benefits" },
+];
+
+// Condition-Specific Diets
+const CONDITION_DIETS = [
+  { value: "", label: "None", description: "No specific condition diet needed" },
+  { value: "anti-inflammatory", label: "Anti-Inflammatory", description: "For allergies, arthritis, chronic inflammation" },
+  { value: "ketogenic", label: "Ketogenic", description: "Very low carb for epilepsy/cancer support (vet supervised)" },
+  { value: "renal", label: "Renal/Kidney", description: "Controlled protein and phosphorus for kidney disease" },
+  { value: "cardiac", label: "Cardiac/Heart", description: "Low sodium, taurine-rich for heart conditions" },
+  { value: "diabetic", label: "Diabetic", description: "High fiber, complex carbs for blood sugar control" },
+  { value: "elimination", label: "Elimination Diet", description: "Single protein to identify allergies" },
 ];
 
 function calculateSizeCategory(weightLbs: number): "toy" | "small" | "medium" | "large" | "giant" {
@@ -91,7 +132,14 @@ export default function MyDogs() {
     activityLevel: "moderate",
     allergies: [] as string[],
     dietaryRestrictions: [] as string[],
-    healthConditions: ""
+    healthConditions: "",
+    // Holistic nutrition fields
+    tcvmConstitution: "",
+    tcvmFoodEnergetics: "neutral",
+    ayurvedicDosha: "",
+    nutritionPhilosophy: "balanced",
+    preferRawFood: false,
+    conditionDiet: ""
   });
 
   const { data: dogs, isLoading, refetch } = trpc.dogs.list.useQuery(undefined, {
@@ -143,7 +191,13 @@ export default function MyDogs() {
       activityLevel: "moderate",
       allergies: [],
       dietaryRestrictions: [],
-      healthConditions: ""
+      healthConditions: "",
+      tcvmConstitution: "",
+      tcvmFoodEnergetics: "neutral",
+      ayurvedicDosha: "",
+      nutritionPhilosophy: "balanced",
+      preferRawFood: false,
+      conditionDiet: ""
     });
   };
 
@@ -175,7 +229,14 @@ export default function MyDogs() {
       allergies: formData.allergies,
       dietaryRestrictions: formData.dietaryRestrictions,
       healthConditions: formData.healthConditions ? formData.healthConditions.split(",").map(s => s.trim()) : [],
-      dailyCalories
+      dailyCalories,
+      // Holistic nutrition fields
+      tcvmConstitution: formData.tcvmConstitution || null,
+      tcvmFoodEnergetics: formData.tcvmFoodEnergetics || null,
+      ayurvedicDosha: formData.ayurvedicDosha || null,
+      nutritionPhilosophy: formData.nutritionPhilosophy,
+      preferRawFood: formData.preferRawFood,
+      conditionDiet: formData.conditionDiet || null
     };
     
     if (editingDog) {
@@ -196,7 +257,13 @@ export default function MyDogs() {
       activityLevel: dog.activityLevel,
       allergies: dog.allergies ? JSON.parse(dog.allergies) : [],
       dietaryRestrictions: dog.dietaryRestrictions ? JSON.parse(dog.dietaryRestrictions) : [],
-      healthConditions: dog.healthConditions ? JSON.parse(dog.healthConditions).join(", ") : ""
+      healthConditions: dog.healthConditions ? JSON.parse(dog.healthConditions).join(", ") : "",
+      tcvmConstitution: dog.tcvmConstitution || "",
+      tcvmFoodEnergetics: dog.tcvmFoodEnergetics || "neutral",
+      ayurvedicDosha: dog.ayurvedicDosha || "",
+      nutritionPhilosophy: dog.nutritionPhilosophy || "balanced",
+      preferRawFood: dog.preferRawFood || false,
+      conditionDiet: dog.conditionDiet || ""
     });
     setIsDialogOpen(true);
   };
@@ -271,137 +338,343 @@ export default function MyDogs() {
                   Add Dog
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingDog ? "Edit Dog Profile" : "Add New Dog"}</DialogTitle>
                 </DialogHeader>
                 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <Label htmlFor="name">Dog's Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="e.g., Max"
-                        required
-                      />
-                    </div>
+                <form onSubmit={handleSubmit}>
+                  <Tabs defaultValue="basic" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
+                      <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                      <TabsTrigger value="health">Health & Diet</TabsTrigger>
+                      <TabsTrigger value="holistic">Holistic</TabsTrigger>
+                    </TabsList>
                     
-                    <div className="col-span-2">
-                      <Label htmlFor="breed">Breed</Label>
-                      <Select
-                        value={formData.breed}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, breed: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select breed" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {BREEDS.map(breed => (
-                            <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                    {/* Basic Info Tab */}
+                    <TabsContent value="basic" className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <Label htmlFor="name">Dog's Name *</Label>
+                          <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="e.g., Max"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="col-span-2">
+                          <Label htmlFor="breed">Breed</Label>
+                          <Select
+                            value={formData.breed}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, breed: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select breed" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BREEDS.map(breed => (
+                                <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="weight">Weight (lbs) *</Label>
+                          <Input
+                            id="weight"
+                            type="number"
+                            value={formData.weightLbs}
+                            onChange={(e) => setFormData(prev => ({ ...prev, weightLbs: e.target.value }))}
+                            placeholder="e.g., 50"
+                            min="1"
+                            max="300"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="age">Age (years) *</Label>
+                          <Input
+                            id="age"
+                            type="number"
+                            value={formData.ageYears}
+                            onChange={(e) => setFormData(prev => ({ ...prev, ageYears: e.target.value }))}
+                            placeholder="e.g., 3"
+                            min="0"
+                            max="25"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="col-span-2">
+                          <Label htmlFor="activity">Activity Level</Label>
+                          <Select
+                            value={formData.activityLevel}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, activityLevel: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sedentary">Sedentary (mostly resting)</SelectItem>
+                              <SelectItem value="moderate">Moderate (regular walks)</SelectItem>
+                              <SelectItem value="active">Active (daily exercise)</SelectItem>
+                              <SelectItem value="very_active">Very Active (working dog)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    {/* Health & Diet Tab */}
+                    <TabsContent value="health" className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block">Known Allergies</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {COMMON_ALLERGIES.map(allergy => (
+                            <div key={allergy} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`allergy-${allergy}`}
+                                checked={formData.allergies.includes(allergy)}
+                                onCheckedChange={() => toggleAllergy(allergy)}
+                              />
+                              <label htmlFor={`allergy-${allergy}`} className="text-sm cursor-pointer">
+                                {allergy}
+                              </label>
+                            </div>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="weight">Weight (lbs) *</Label>
-                      <Input
-                        id="weight"
-                        type="number"
-                        value={formData.weightLbs}
-                        onChange={(e) => setFormData(prev => ({ ...prev, weightLbs: e.target.value }))}
-                        placeholder="e.g., 50"
-                        min="1"
-                        max="300"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="age">Age (years) *</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        value={formData.ageYears}
-                        onChange={(e) => setFormData(prev => ({ ...prev, ageYears: e.target.value }))}
-                        placeholder="e.g., 3"
-                        min="0"
-                        max="25"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="col-span-2">
-                      <Label htmlFor="activity">Activity Level</Label>
-                      <Select
-                        value={formData.activityLevel}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, activityLevel: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sedentary">Sedentary (mostly resting)</SelectItem>
-                          <SelectItem value="moderate">Moderate (regular walks)</SelectItem>
-                          <SelectItem value="active">Active (daily exercise)</SelectItem>
-                          <SelectItem value="very_active">Very Active (working dog)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="mb-2 block">Known Allergies</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {COMMON_ALLERGIES.map(allergy => (
-                        <div key={allergy} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`allergy-${allergy}`}
-                            checked={formData.allergies.includes(allergy)}
-                            onCheckedChange={() => toggleAllergy(allergy)}
-                          />
-                          <label htmlFor={`allergy-${allergy}`} className="text-sm cursor-pointer">
-                            {allergy}
-                          </label>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="mb-2 block">Dietary Restrictions</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {DIETARY_RESTRICTIONS.map(restriction => (
-                        <div key={restriction} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`restriction-${restriction}`}
-                            checked={formData.dietaryRestrictions.includes(restriction)}
-                            onCheckedChange={() => toggleRestriction(restriction)}
-                          />
-                          <label htmlFor={`restriction-${restriction}`} className="text-sm cursor-pointer">
-                            {restriction}
-                          </label>
+                      </div>
+                      
+                      <div>
+                        <Label className="mb-2 block">Dietary Restrictions</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {DIETARY_RESTRICTIONS.map(restriction => (
+                            <div key={restriction} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`restriction-${restriction}`}
+                                checked={formData.dietaryRestrictions.includes(restriction)}
+                                onCheckedChange={() => toggleRestriction(restriction)}
+                              />
+                              <label htmlFor={`restriction-${restriction}`} className="text-sm cursor-pointer">
+                                {restriction}
+                              </label>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="health">Health Conditions (comma-separated)</Label>
-                    <Input
-                      id="health"
-                      value={formData.healthConditions}
-                      onChange={(e) => setFormData(prev => ({ ...prev, healthConditions: e.target.value }))}
-                      placeholder="e.g., Arthritis, Diabetes"
-                    />
-                  </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="health">Health Conditions (comma-separated)</Label>
+                        <Input
+                          id="health"
+                          value={formData.healthConditions}
+                          onChange={(e) => setFormData(prev => ({ ...prev, healthConditions: e.target.value }))}
+                          placeholder="e.g., Arthritis, Diabetes"
+                        />
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label>Condition-Specific Diet</Label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Select if your dog has a specific health condition requiring a specialized diet. Always consult your vet.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select
+                          value={formData.conditionDiet}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, conditionDiet: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select condition diet (if any)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CONDITION_DIETS.map(diet => (
+                              <SelectItem key={diet.value} value={diet.value}>
+                                <div>
+                                  <span className="font-medium">{diet.label}</span>
+                                  <span className="text-xs text-muted-foreground ml-2">{diet.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TabsContent>
+                    
+                    {/* Holistic Tab */}
+                    <TabsContent value="holistic" className="space-y-4">
+                      <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-muted-foreground">
+                          <Leaf className="w-4 h-4 inline mr-1" />
+                          These optional settings allow you to incorporate Traditional Chinese Veterinary Medicine (TCVM), 
+                          Ayurvedic principles, and other holistic approaches into your dog's recipes.
+                        </p>
+                      </div>
+                      
+                      {/* Nutrition Philosophy */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label>Nutrition Philosophy</Label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Choose the overall approach to your dog's nutrition.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select
+                          value={formData.nutritionPhilosophy}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, nutritionPhilosophy: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {NUTRITION_PHILOSOPHIES.map(phil => (
+                              <SelectItem key={phil.value} value={phil.value}>
+                                <div>
+                                  <span className="font-medium">{phil.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {NUTRITION_PHILOSOPHIES.find(p => p.value === formData.nutritionPhilosophy)?.description}
+                        </p>
+                      </div>
+                      
+                      {/* Raw Food Preference */}
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="preferRaw"
+                          checked={formData.preferRawFood}
+                          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, preferRawFood: checked as boolean }))}
+                        />
+                        <label htmlFor="preferRaw" className="text-sm cursor-pointer">
+                          Prefer raw/uncooked ingredients when possible
+                        </label>
+                      </div>
+                      
+                      {/* TCVM Constitution */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label>TCVM Constitution (Five Elements)</Label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Traditional Chinese Veterinary Medicine categorizes dogs into five constitutional types based on personality and physical traits.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select
+                          value={formData.tcvmConstitution}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, tcvmConstitution: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select constitution (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Not sure / Skip</SelectItem>
+                            {TCVM_CONSTITUTIONS.map(const_ => (
+                              <SelectItem key={const_.value} value={const_.value}>
+                                {const_.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {formData.tcvmConstitution && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {TCVM_CONSTITUTIONS.find(c => c.value === formData.tcvmConstitution)?.description}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* TCVM Food Energetics */}
+                      {formData.tcvmConstitution && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Label>Food Energetics Preference</Label>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>In TCVM, foods have warming, cooling, or neutral properties that can balance your dog's constitution.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <Select
+                            value={formData.tcvmFoodEnergetics}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, tcvmFoodEnergetics: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="warming">Warming (for cold/sluggish dogs)</SelectItem>
+                              <SelectItem value="cooling">Cooling (for hot/inflamed dogs)</SelectItem>
+                              <SelectItem value="neutral">Neutral (balanced)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
+                      {/* Ayurvedic Dosha */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label>Ayurvedic Dosha</Label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Ayurvedic medicine identifies three doshas (body types) that influence diet and health.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select
+                          value={formData.ayurvedicDosha}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, ayurvedicDosha: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select dosha (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Not sure / Skip</SelectItem>
+                            {AYURVEDIC_DOSHAS.map(dosha => (
+                              <SelectItem key={dosha.value} value={dosha.value}>
+                                {dosha.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {formData.ayurvedicDosha && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {AYURVEDIC_DOSHAS.find(d => d.value === formData.ayurvedicDosha)?.description}
+                          </p>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                   
                   <Button 
                     type="submit" 
-                    className="w-full btn-doggo"
+                    className="w-full btn-doggo mt-6"
                     disabled={createDog.isPending || updateDog.isPending}
                   >
                     {(createDog.isPending || updateDog.isPending) && (
@@ -474,6 +747,31 @@ export default function MyDogs() {
                         <p className="text-muted-foreground text-xs">cal/day</p>
                       </div>
                     </div>
+                    
+                    {/* Nutrition Philosophy Badge */}
+                    {dog.nutritionPhilosophy && dog.nutritionPhilosophy !== "balanced" && (
+                      <div className="mb-2">
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                          {NUTRITION_PHILOSOPHIES.find(p => p.value === dog.nutritionPhilosophy)?.label || dog.nutritionPhilosophy}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* TCVM/Ayurveda Badges */}
+                    {(dog.tcvmConstitution || dog.ayurvedicDosha) && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {dog.tcvmConstitution && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                            {TCVM_CONSTITUTIONS.find(c => c.value === dog.tcvmConstitution)?.label}
+                          </span>
+                        )}
+                        {dog.ayurvedicDosha && (
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                            {dog.ayurvedicDosha.charAt(0).toUpperCase() + dog.ayurvedicDosha.slice(1)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     
                     {allergies.length > 0 && (
                       <div className="mb-2">
