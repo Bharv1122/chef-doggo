@@ -390,23 +390,48 @@ export default function Generate() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Serving Info */}
+                    {generatedRecipe.servingInfo && (
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                        <h3 className="font-bold text-primary mb-2">Serving Information</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                          <div>
+                            <p className="font-bold text-xl text-primary">{generatedRecipe.servingInfo.totalCups}</p>
+                            <p className="text-xs text-muted-foreground">total cups</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl text-secondary">{generatedRecipe.servingInfo.cupsPerMeal}</p>
+                            <p className="text-xs text-muted-foreground">cups/meal</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl text-accent">{generatedRecipe.servingInfo.mealsPerDay}</p>
+                            <p className="text-xs text-muted-foreground">meals/day</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl">{generatedRecipe.servingInfo.daysThisRecipeLasts}</p>
+                            <p className="text-xs text-muted-foreground">days batch</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Nutrition Summary */}
                     {generatedRecipe.nutrition && (
-                      <div className="grid grid-cols-4 gap-2 text-center">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
                         <div className="bg-muted rounded-lg p-3">
-                          <p className="font-bold text-lg text-primary">{generatedRecipe.nutrition.caloriesPerServing}</p>
-                          <p className="text-xs text-muted-foreground">calories</p>
+                          <p className="font-bold text-lg text-primary">{generatedRecipe.nutrition.totalCalories || generatedRecipe.nutrition.caloriesPerServing}</p>
+                          <p className="text-xs text-muted-foreground">total calories</p>
                         </div>
                         <div className="bg-muted rounded-lg p-3">
-                          <p className="font-bold text-lg text-secondary">{generatedRecipe.nutrition.protein}g</p>
+                          <p className="font-bold text-lg text-secondary">{generatedRecipe.nutrition.proteinGrams || generatedRecipe.nutrition.protein}g</p>
                           <p className="text-xs text-muted-foreground">protein</p>
                         </div>
                         <div className="bg-muted rounded-lg p-3">
-                          <p className="font-bold text-lg text-accent">{generatedRecipe.nutrition.fat}g</p>
+                          <p className="font-bold text-lg text-accent">{generatedRecipe.nutrition.fatGrams || generatedRecipe.nutrition.fat}g</p>
                           <p className="text-xs text-muted-foreground">fat</p>
                         </div>
                         <div className="bg-muted rounded-lg p-3">
-                          <p className="font-bold text-lg">{generatedRecipe.nutrition.carbohydrates}g</p>
+                          <p className="font-bold text-lg">{generatedRecipe.nutrition.carbGrams || generatedRecipe.nutrition.carbohydrates}g</p>
                           <p className="text-xs text-muted-foreground">carbs</p>
                         </div>
                       </div>
@@ -417,17 +442,30 @@ export default function Generate() {
                       <h3 className="font-bold mb-3">Ingredients</h3>
                       <ul className="space-y-2">
                         {generatedRecipe.ingredients?.map((ing: any, i: number) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                              ing.category === 'protein' ? 'bg-primary' :
-                              ing.category === 'vegetable' ? 'bg-secondary' :
-                              ing.category === 'carb' ? 'bg-accent' :
-                              'bg-muted-foreground'
-                            }`} />
-                            <span>{ing.amount} {ing.unit} {ing.name}</span>
+                          <li key={i} className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                ing.category === 'protein' ? 'bg-primary' :
+                                ing.category === 'vegetable' ? 'bg-secondary' :
+                                ing.category === 'carb' ? 'bg-accent' :
+                                ing.category === 'fat' ? 'bg-yellow-500' :
+                                'bg-muted-foreground'
+                              }`} />
+                              <span>{ing.amount} {ing.unit} {ing.name}</span>
+                            </div>
+                            {ing.volumeCups && (
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                {ing.volumeCups} cups
+                              </span>
+                            )}
                           </li>
                         ))}
                       </ul>
+                      {generatedRecipe.totalVolumeCups && (
+                        <p className="text-sm text-muted-foreground mt-3 pt-3 border-t">
+                          <strong>Total Volume:</strong> {generatedRecipe.totalVolumeCups} cups
+                        </p>
+                      )}
                     </div>
 
                     {/* Instructions */}

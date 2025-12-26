@@ -161,3 +161,15 @@
 4. **Adding features:** Add new items under appropriate priority section
 5. **Reporting bugs:** Add to Known Issues section
 6. **End of session:** Update Session Log with what was accomplished
+
+
+---
+
+## 🐛 Known Issues
+
+### Bug: Recipe portions don't match expected total volume
+- **Reported:** Dec 25, 2024
+- **Status:** Fixed
+- **Description:** Recipe ingredients total ~9 cups but should equal the dog's daily serving size (e.g., 14 cups for larger dogs)
+- **Root Cause:** AI prompt doesn't specify exact volume targets or calculate portions based on calorie density
+- **Fix:** Update recipe generation prompt to calculate portions based on dog's daily calorie needs and ensure total volume is appropriate

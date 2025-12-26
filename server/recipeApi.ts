@@ -3,6 +3,57 @@ import { invokeLLM } from "./_core/llm";
 
 const router = Router();
 
+// Calculate daily food volume based on dog's weight
+// General guideline: dogs eat 2-3% of body weight per day in fresh food
+// This translates to roughly 1 cup per 10 lbs of body weight
+function calculateDailyFoodVolume(weightLbs: number, activityLevel: string): { cups: number; ounces: number } {
+  // Base: 1 cup per 10 lbs
+  let cupsPerDay = weightLbs / 10;
+  
+  // Adjust for activity level
+  switch (activityLevel) {
+    case 'sedentary':
+      cupsPerDay *= 0.8;
+      break;
+    case 'moderate':
+      cupsPerDay *= 1.0;
+      break;
+    case 'active':
+      cupsPerDay *= 1.2;
+      break;
+    case 'very_active':
+      cupsPerDay *= 1.4;
+      break;
+  }
+  
+  // Round to nearest 0.5 cup
+  cupsPerDay = Math.round(cupsPerDay * 2) / 2;
+  
+  // Minimum 1 cup, maximum reasonable amount
+  cupsPerDay = Math.max(1, Math.min(cupsPerDay, 12));
+  
+  return {
+    cups: cupsPerDay,
+    ounces: cupsPerDay * 8
+  };
+}
+
+// Calculate ingredient breakdown by category
+function calculateIngredientBreakdown(totalCups: number): {
+  proteinCups: number;
+  vegetableCups: number;
+  carbCups: number;
+  fatCups: number;
+} {
+  // Ideal ratio for dogs: 50% protein, 25% vegetables, 20% carbs, 5% healthy fats
+  return {
+    proteinCups: Math.round(totalCups * 0.50 * 10) / 10,
+    vegetableCups: Math.round(totalCups * 0.25 * 10) / 10,
+    carbCups: Math.round(totalCups * 0.20 * 10) / 10,
+    fatCups: Math.round(totalCups * 0.05 * 10) / 10
+  };
+}
+
 // Canine nutrition knowledge for recipe generation
 const CANINE_NUTRITION_CONTEXT = `
 You are an expert canine nutritionist creating homemade dog food recipes. Follow these guidelines:
@@ -34,6 +85,12 @@ REQUIRED SUPPLEMENTS for homemade diets:
 1. Calcium supplement (most critical) - 1000mg per pound of meat
 2. Fish oil/Omega-3 - for skin and coat health
 3. Multivitamin - to cover trace minerals
+
+VOLUME CONVERSIONS:
+- 1 pound of cooked meat = approximately 2 cups
+- 1 pound of cooked vegetables = approximately 2-3 cups
+- 1 cup of cooked rice = 1 cup
+- 1 pound of sweet potato (mashed) = approximately 2 cups
 `;
 
 // Analyze kibble label image
@@ -92,35 +149,57 @@ router.post("/api/generate-recipe", async (req, res) => {
     const restrictions = dog.dietaryRestrictions ? JSON.parse(dog.dietaryRestrictions) : [];
     const healthConditions = dog.healthConditions ? JSON.parse(dog.healthConditions) : [];
 
-    let prompt = "Create a homemade dog food recipe for:\n";
-    prompt += "- Name: " + dog.name + "\n";
-    prompt += "- Breed: " + (dog.breed || "Mixed breed") + "\n";
-    prompt += "- Weight: " + dog.weightLbs + " lbs\n";
-    prompt += "- Age: " + dog.ageYears + " years\n";
-    prompt += "- Life Stage: " + dog.lifeStage + "\n";
-    prompt += "- Size Category: " + dog.sizeCategory + "\n";
-    prompt += "- Activity Level: " + dog.activityLevel + "\n";
-    prompt += "- Daily Calorie Needs: " + dog.dailyCalories + " calories\n";
+    // Calculate proper food volume for this dog
+    const dailyVolume = calculateDailyFoodVolume(dog.weightLbs, dog.activityLevel || 'moderate');
+    const breakdown = calculateIngredientBreakdown(dailyVolume.cups);
+
+    let prompt = `Create a homemade dog food recipe for:
+- Name: ${dog.name}
+- Breed: ${dog.breed || "Mixed breed"}
+- Weight: ${dog.weightLbs} lbs
+- Age: ${dog.ageYears} years
+- Life Stage: ${dog.lifeStage}
+- Size Category: ${dog.sizeCategory}
+- Activity Level: ${dog.activityLevel}
+- Daily Calorie Needs: ${dog.dailyCalories} calories
+
+**CRITICAL PORTION REQUIREMENTS:**
+This dog needs ${dailyVolume.cups} cups of food per day (${dailyVolume.ounces} oz).
+
+The recipe MUST produce EXACTLY ${dailyVolume.cups} cups total when all ingredients are combined:
+- Protein (meat/fish/eggs): ${breakdown.proteinCups} cups (approximately ${Math.round(breakdown.proteinCups / 2 * 10) / 10} lbs of cooked meat)
+- Vegetables: ${breakdown.vegetableCups} cups
+- Carbohydrates (rice/oats): ${breakdown.carbCups} cups (cooked)
+- Healthy fats/oils: ${breakdown.fatCups} cups (or equivalent tablespoons)
+
+Use these volume targets when specifying ingredient amounts. Express amounts in CUPS for easy measuring, not pounds.
+`;
     
     if (allergies.length > 0) {
-      prompt += "- ALLERGIES (MUST AVOID): " + allergies.join(", ") + "\n";
+      prompt += `\n- ALLERGIES (MUST AVOID): ${allergies.join(", ")}`;
     }
     if (restrictions.length > 0) {
-      prompt += "- Dietary Restrictions: " + restrictions.join(", ") + "\n";
+      prompt += `\n- Dietary Restrictions: ${restrictions.join(", ")}`;
     }
     if (healthConditions.length > 0) {
-      prompt += "- Health Conditions: " + healthConditions.join(", ") + "\n";
+      prompt += `\n- Health Conditions: ${healthConditions.join(", ")}`;
     }
     if (kibbleIngredients) {
-      prompt += "- Current kibble ingredients to match: " + kibbleIngredients + "\n";
+      prompt += `\n- Current kibble ingredients to match: ${kibbleIngredients}`;
     }
     
-    prompt += "\nCreate a nutritionally balanced recipe that:\n";
-    prompt += "1. Meets AAFCO nutritional guidelines\n";
-    prompt += "2. Avoids all allergens listed\n";
-    prompt += "3. Provides appropriate calories for this dog\n";
-    prompt += "4. Includes required supplements with specific amounts\n";
-    prompt += "5. Is practical to prepare at home\n";
+    prompt += `
+
+Create a nutritionally balanced recipe that:
+1. Meets AAFCO nutritional guidelines
+2. Avoids all allergens listed
+3. Provides ${dog.dailyCalories} calories total
+4. Produces EXACTLY ${dailyVolume.cups} cups of food when combined
+5. Includes required supplements with specific amounts
+6. Is practical to prepare at home
+7. Uses CUPS as the primary measurement unit for easy portioning
+
+IMPORTANT: Double-check that the total volume of all ingredients equals ${dailyVolume.cups} cups.`;
 
     const response = await invokeLLM({
       messages: [
@@ -143,6 +222,7 @@ router.post("/api/generate-recipe", async (req, res) => {
             properties: {
               name: { type: "string", description: "Creative recipe name" },
               description: { type: "string", description: "Brief description of the recipe" },
+              totalVolumeCups: { type: "number", description: "Total volume of the recipe in cups" },
               ingredients: {
                 type: "array",
                 items: {
@@ -151,9 +231,10 @@ router.post("/api/generate-recipe", async (req, res) => {
                     name: { type: "string" },
                     amount: { type: "string" },
                     unit: { type: "string" },
-                    category: { type: "string", enum: ["protein", "vegetable", "carb", "supplement", "other"] }
+                    volumeCups: { type: "number", description: "Volume contribution in cups" },
+                    category: { type: "string", enum: ["protein", "vegetable", "carb", "fat", "supplement", "other"] }
                   },
-                  required: ["name", "amount", "unit", "category"],
+                  required: ["name", "amount", "unit", "volumeCups", "category"],
                   additionalProperties: false
                 }
               },
@@ -172,12 +253,14 @@ router.post("/api/generate-recipe", async (req, res) => {
               nutrition: {
                 type: "object",
                 properties: {
-                  caloriesPerServing: { type: "number" },
-                  protein: { type: "number" },
-                  fat: { type: "number" },
-                  carbohydrates: { type: "number" }
+                  totalCalories: { type: "number", description: "Total calories for the entire recipe" },
+                  caloriesPerCup: { type: "number", description: "Calories per cup" },
+                  proteinGrams: { type: "number" },
+                  fatGrams: { type: "number" },
+                  carbGrams: { type: "number" },
+                  fiberGrams: { type: "number" }
                 },
-                required: ["caloriesPerServing", "protein", "fat", "carbohydrates"],
+                required: ["totalCalories", "caloriesPerCup", "proteinGrams", "fatGrams", "carbGrams", "fiberGrams"],
                 additionalProperties: false
               },
               supplements: {
@@ -193,12 +276,21 @@ router.post("/api/generate-recipe", async (req, res) => {
                   additionalProperties: false
                 }
               },
-              servingSize: { type: "string" },
-              servingsPerDay: { type: "number" },
+              servingInfo: {
+                type: "object",
+                properties: {
+                  totalCups: { type: "number", description: "Total cups this recipe makes" },
+                  cupsPerMeal: { type: "number", description: "Cups per meal" },
+                  mealsPerDay: { type: "number", description: "Number of meals per day" },
+                  daysThisRecipeLasts: { type: "number", description: "How many days this batch lasts" }
+                },
+                required: ["totalCups", "cupsPerMeal", "mealsPerDay", "daysThisRecipeLasts"],
+                additionalProperties: false
+              },
               prepTimeMinutes: { type: "number" },
               cookTimeMinutes: { type: "number" }
             },
-            required: ["name", "description", "ingredients", "instructions", "nutrition", "supplements", "servingSize", "servingsPerDay", "prepTimeMinutes", "cookTimeMinutes"],
+            required: ["name", "description", "totalVolumeCups", "ingredients", "instructions", "nutrition", "supplements", "servingInfo", "prepTimeMinutes", "cookTimeMinutes"],
             additionalProperties: false
           }
         }
@@ -211,6 +303,11 @@ router.post("/api/generate-recipe", async (req, res) => {
     }
 
     const recipe = JSON.parse(recipeContent);
+    
+    // Add the calculated daily volume to the response for reference
+    recipe.calculatedDailyVolume = dailyVolume;
+    recipe.ingredientBreakdown = breakdown;
+    
     res.json(recipe);
   } catch (error) {
     console.error("Error generating recipe:", error);
