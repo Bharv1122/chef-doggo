@@ -7,7 +7,7 @@ import { getHealthConditionRestrictions } from '@/lib/nutrition-utils';
 import { checkMedicationInteractions, getMedicationDisclaimerTier } from '@/lib/medication-interactions';
 import { calculateRecipeCost } from '@/lib/cost-estimation';
 import { determineTCVMConstitution, checkTCVMAlignment } from '@/lib/tcvm';
-import { determineDoshas, checkAyurvedicAlignment, detectConflicts } from '@/lib/ayurveda';
+import { determineDosha, checkAyurvedaAlignment, detectHolisticConflicts } from '@/lib/ayurveda';
 import { validateRecipeSafety, getSafetyReport } from '@/lib/safety-validation';
 
 const prisma = new PrismaClient();
@@ -87,12 +87,12 @@ export async function POST(req: NextRequest) {
       ingredients: ingredientsForSafety,
       healthConditions,
       nutrients: {
-        protein: result.nutrients?.protein,
-        fat: result.nutrients?.fat,
+        protein: result.nutritionSummary?.protein,
+        fat: result.nutritionSummary?.fat,
       },
       weight: dogProfile.weight,
       dailyCalories: dogProfile.dailyCalories ?? 0,
-      portionCalories: result.dailyCalories,
+      portionCalories: result.nutritionSummary?.calories,
     });
 
     // HARD BLOCK if critical safety violations found
@@ -129,50 +129,71 @@ export async function POST(req: NextRequest) {
 
     // Phase 1C: Holistic medicine integration (TCVM & Ayurveda)
     let holisticRecommendations: any = null;
-    let holisticConflicts: any[] = [];
+    let holisticConflicts: any = null;
 
     if (dogProfile.useTCVM || dogProfile.useAyurveda) {
-      const dogCharacteristics = {
-        age: dogProfile.age,
-        weight: dogProfile.weight,
-        breed: dogProfile.breed,
-        activityLevel: dogProfile.activityLevel,
-        healthConditions: healthConditions,
-        temperament: 'balanced', // Default - could be added to profile later
-      };
-
       holisticRecommendations = {};
+      const ingredients = ingredientsForChecking.map(ing => ing.name);
 
       if (dogProfile.useTCVM) {
-        const tcvmConstitution = determineTCVMConstitution(dogCharacteristics);
-        const tcvmAlignment = checkTCVMAlignment(
-          ingredientsForChecking.map(ing => ing.name),
-          tcvmConstitution
-        );
+        const tcvmConstitution = determineTCVMConstitution(healthConditions);
+        
+        // Check alignment for each ingredient
+        const alignmentResults = ingredients.map(ingredient => ({
+          ingredient,
+          ...checkTCVMAlignment(ingredient, tcvmConstitution)
+        }));
+        
+        const aligned = alignmentResults.filter(r => r.aligned);
+        const misaligned = alignmentResults.filter(r => !r.aligned);
+        
         holisticRecommendations.tcvm = {
           constitution: tcvmConstitution,
-          alignment: tcvmAlignment,
+          aligned: aligned.map(r => r.ingredient),
+          misaligned: misaligned.map(r => ({ ingredient: r.ingredient, note: r.note })),
         };
       }
 
       if (dogProfile.useAyurveda) {
-        const doshas = determineDoshas(dogCharacteristics);
-        const ayurvedicAlignment = checkAyurvedicAlignment(
-          ingredientsForChecking.map(ing => ing.name),
-          doshas.primary
+        // Determine size based on weight
+        let size = 'medium';
+        if (dogProfile.weight < 25) size = 'small';
+        else if (dogProfile.weight > 60) size = 'large';
+
+        const ayurvedaProfile = determineDosha(
+          size,
+          dogProfile.activityLevel,
+          healthConditions
         );
+        
+        // Check alignment for each ingredient
+        const alignmentResults = ingredients.map(ingredient => ({
+          ingredient,
+          ...checkAyurvedaAlignment(ingredient, ayurvedaProfile)
+        }));
+        
+        const aligned = alignmentResults.filter(r => r.aligned);
+        const misaligned = alignmentResults.filter(r => !r.aligned);
+        
         holisticRecommendations.ayurveda = {
-          doshas,
-          alignment: ayurvedicAlignment,
+          profile: ayurvedaProfile,
+          aligned: aligned.map(r => r.ingredient),
+          misaligned: misaligned.map(r => ({ ingredient: r.ingredient, note: r.note })),
         };
       }
 
       // Check for conflicts between TCVM and Ayurveda
       if (dogProfile.useTCVM && dogProfile.useAyurveda) {
-        holisticConflicts = detectConflicts(
-          ingredientsForChecking.map(ing => ing.name),
-          holisticRecommendations.tcvm.constitution,
-          holisticRecommendations.ayurveda.doshas.primary
+        const tcvmMisaligned = holisticRecommendations.tcvm.misaligned.map((m: any) => m.ingredient);
+        const tcvmAligned = holisticRecommendations.tcvm.aligned;
+        const ayurvedaMisaligned = holisticRecommendations.ayurveda.misaligned.map((m: any) => m.ingredient);
+        const ayurvedaAligned = holisticRecommendations.ayurveda.aligned;
+        
+        holisticConflicts = detectHolisticConflicts(
+          tcvmMisaligned,
+          tcvmAligned,
+          ayurvedaMisaligned,
+          ayurvedaAligned
         );
       }
     }
@@ -181,7 +202,7 @@ export async function POST(req: NextRequest) {
     let disclaimerTier = 'standard';
     if (healthConditions.some(c => c.toLowerCase().includes('kidney') || c.toLowerCase().includes('pancreatitis'))) {
       disclaimerTier = 'therapeutic';
-    } else if (holisticConflicts.length > 0) {
+    } else if (holisticConflicts && holisticConflicts.hasConflict) {
       disclaimerTier = 'holistic';
     } else if (medicationTier) {
       disclaimerTier = medicationTier;
