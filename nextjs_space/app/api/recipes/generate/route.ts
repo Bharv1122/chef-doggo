@@ -80,12 +80,17 @@ export async function POST(req: NextRequest) {
 
     // Phase 1B: Check medication interactions
     const medications = (dogProfile.medications as string[]) ?? [];
-    const medicationInteractions = checkMedicationInteractions(medications, result.ingredients);
+    // Map ingredients from {name, amount} to {name, quantity} for compatibility
+    const ingredientsForChecking = result.ingredients.map(ing => ({
+      name: ing.name,
+      quantity: ing.amount
+    }));
+    const medicationInteractions = checkMedicationInteractions(medications, ingredientsForChecking);
     const medicationTier = getMedicationDisclaimerTier(medicationInteractions);
 
     // Phase 1B: Calculate cost estimation
     const costEstimate = calculateRecipeCost(
-      result.ingredients,
+      ingredientsForChecking,
       7, // servingsPerBatch - typically 7 days worth
       1, // servingsPerDay
       60 // default kibbleCostPerMonth
