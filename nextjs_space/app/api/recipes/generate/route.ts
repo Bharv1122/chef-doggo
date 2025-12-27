@@ -6,6 +6,9 @@ import { generateRecipe } from '@/lib/recipe-generator';
 import { getHealthConditionRestrictions } from '@/lib/nutrition-utils';
 import { checkMedicationInteractions, getMedicationDisclaimerTier } from '@/lib/medication-interactions';
 import { calculateRecipeCost } from '@/lib/cost-estimation';
+import { determineTCVMConstitution, checkTCVMAlignment } from '@/lib/tcvm';
+import { determineDoshas, checkAyurvedicAlignment, detectConflicts } from '@/lib/ayurveda';
+import { validateRecipeSafety, getSafetyReport } from '@/lib/safety-validation';
 
 const prisma = new PrismaClient();
 
@@ -78,6 +81,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Phase 1C: P0 Safety Validation - HARD BLOCK on critical violations
+    const ingredientsForSafety = result.ingredients.map(ing => ing.name);
+    const safetyCheck = validateRecipeSafety({
+      ingredients: ingredientsForSafety,
+      healthConditions,
+      nutrients: {
+        protein: result.nutrients?.protein,
+        fat: result.nutrients?.fat,
+      },
+      weight: dogProfile.weight,
+      dailyCalories: dogProfile.dailyCalories ?? 0,
+      portionCalories: result.dailyCalories,
+    });
+
+    // HARD BLOCK if critical safety violations found
+    if (safetyCheck.hardBlock) {
+      const safetyReport = getSafetyReport(safetyCheck);
+      return NextResponse.json(
+        {
+          error: `SAFETY VIOLATION: Recipe cannot be generated.\\n\\n${safetyReport}`,
+          disclaimerTier: 'critical',
+          healthRestrictions: restrictions,
+          safetyViolations: safetyCheck.violations,
+        },
+        { status: 400 }
+      );
+    }
+
     // Phase 1B: Check medication interactions
     const medications = (dogProfile.medications as string[]) ?? [];
     // Map ingredients from {name, amount} to {name, quantity} for compatibility
@@ -96,10 +127,62 @@ export async function POST(req: NextRequest) {
       60 // default kibbleCostPerMonth
     );
 
-    // Determine disclaimer tier (priority: critical > therapeutic > medication > standard)
+    // Phase 1C: Holistic medicine integration (TCVM & Ayurveda)
+    let holisticRecommendations: any = null;
+    let holisticConflicts: any[] = [];
+
+    if (dogProfile.useTCVM || dogProfile.useAyurveda) {
+      const dogCharacteristics = {
+        age: dogProfile.age,
+        weight: dogProfile.weight,
+        breed: dogProfile.breed,
+        activityLevel: dogProfile.activityLevel,
+        healthConditions: healthConditions,
+        temperament: 'balanced', // Default - could be added to profile later
+      };
+
+      holisticRecommendations = {};
+
+      if (dogProfile.useTCVM) {
+        const tcvmConstitution = determineTCVMConstitution(dogCharacteristics);
+        const tcvmAlignment = checkTCVMAlignment(
+          ingredientsForChecking.map(ing => ing.name),
+          tcvmConstitution
+        );
+        holisticRecommendations.tcvm = {
+          constitution: tcvmConstitution,
+          alignment: tcvmAlignment,
+        };
+      }
+
+      if (dogProfile.useAyurveda) {
+        const doshas = determineDoshas(dogCharacteristics);
+        const ayurvedicAlignment = checkAyurvedicAlignment(
+          ingredientsForChecking.map(ing => ing.name),
+          doshas.primary
+        );
+        holisticRecommendations.ayurveda = {
+          doshas,
+          alignment: ayurvedicAlignment,
+        };
+      }
+
+      // Check for conflicts between TCVM and Ayurveda
+      if (dogProfile.useTCVM && dogProfile.useAyurveda) {
+        holisticConflicts = detectConflicts(
+          ingredientsForChecking.map(ing => ing.name),
+          holisticRecommendations.tcvm.constitution,
+          holisticRecommendations.ayurveda.doshas.primary
+        );
+      }
+    }
+
+    // Determine disclaimer tier (priority: critical > therapeutic > holistic > medication > standard)
     let disclaimerTier = 'standard';
     if (healthConditions.some(c => c.toLowerCase().includes('kidney') || c.toLowerCase().includes('pancreatitis'))) {
       disclaimerTier = 'therapeutic';
+    } else if (holisticConflicts.length > 0) {
+      disclaimerTier = 'holistic';
     } else if (medicationTier) {
       disclaimerTier = medicationTier;
     }
@@ -109,6 +192,9 @@ export async function POST(req: NextRequest) {
       costEstimate,
       medicationInteractions,
       healthRestrictions: restrictions,
+      holisticRecommendations,
+      holisticConflicts,
+      safetyCheck: safetyCheck.isSafe ? null : safetyCheck,
       disclaimerTier,
     });
   } catch (error) {
