@@ -59,3 +59,20 @@ Starting server...
  GET / 200 in 29ms
  GET / 200 in 65ms
  GET / 200 in 37ms
+   Reload env: .env
+ ✓ Compiled in 222ms (624 modules)
+ ✓ Compiled in 530ms (636 modules)
+ ✓ Compiled in 308ms (636 modules)
+ ✓ Compiled in 295ms (636 modules)
+ ✓ Compiled in 314ms (636 modules)
+ ✓ Compiled in 343ms (636 modules)
+ ✓ Compiled in 421ms (636 modules)
+ ✓ Compiled in 269ms (636 modules)
+ ✓ Compiled in 288ms (636 modules)
+ ✓ Compiled in 356ms (636 modules)
+ ✓ Compiled in 239ms (636 modules)
+ ✓ Compiled in 235ms (636 modules)
+ ✓ Compiled in 334ms (636 modules)
+ ✓ Compiled in 247ms (636 modules)
+ ✓ Compiled in 243ms (636 modules)
+ ✓ Compiled in 277ms (636 modules)

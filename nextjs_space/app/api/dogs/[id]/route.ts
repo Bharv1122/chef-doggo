@@ -74,6 +74,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       allergies,
       healthConditions,
       dietaryRestrictions,
+      medications,
       nutritionPhilosophy,
     } = body;
 
@@ -101,6 +102,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         allergies: allergies ?? existingDog.allergies,
         healthConditions: healthConditions ?? existingDog.healthConditions,
         dietaryRestrictions: dietaryRestrictions ?? existingDog.dietaryRestrictions,
+        medications: medications ?? existingDog.medications,
         nutritionPhilosophy: nutritionPhilosophy ?? existingDog.nutritionPhilosophy,
         dailyCalories,
       },

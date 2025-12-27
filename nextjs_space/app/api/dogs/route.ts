@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       allergies,
       healthConditions,
       dietaryRestrictions,
+      medications,
       nutritionPhilosophy,
     } = body;
 
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
         allergies: allergies ?? [],
         healthConditions: healthConditions ?? [],
         dietaryRestrictions: dietaryRestrictions ?? [],
+        medications: medications ?? [],
         nutritionPhilosophy: nutritionPhilosophy ?? 'Balanced',
         dailyCalories,
       },

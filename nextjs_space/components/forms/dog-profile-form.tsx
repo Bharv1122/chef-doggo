@@ -19,9 +19,11 @@ export function DogProfileForm({ initialData, isEdit = false }: DogProfileFormPr
   const [allergies, setAllergies] = useState<string[]>(initialData?.allergies ?? []);
   const [healthConditions, setHealthConditions] = useState<string[]>(initialData?.healthConditions ?? []);
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>(initialData?.dietaryRestrictions ?? []);
+  const [medications, setMedications] = useState<string[]>(initialData?.medications ?? []);
   const [allergyInput, setAllergyInput] = useState('');
   const [healthInput, setHealthInput] = useState('');
   const [dietaryInput, setDietaryInput] = useState('');
+  const [medicationInput, setMedicationInput] = useState('');
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,6 +42,7 @@ export function DogProfileForm({ initialData, isEdit = false }: DogProfileFormPr
       allergies,
       healthConditions,
       dietaryRestrictions,
+      medications,
     };
 
     try {
@@ -84,6 +87,13 @@ export function DogProfileForm({ initialData, isEdit = false }: DogProfileFormPr
     if (dietaryInput?.trim?.() && !dietaryRestrictions?.includes?.(dietaryInput.trim())) {
       setDietaryRestrictions([...(dietaryRestrictions ?? []), dietaryInput.trim()]);
       setDietaryInput('');
+    }
+  };
+
+  const addMedication = () => {
+    if (medicationInput?.trim?.() && !medications?.includes?.(medicationInput.trim())) {
+      setMedications([...(medications ?? []), medicationInput.trim()]);
+      setMedicationInput('');
     }
   };
 
@@ -289,6 +299,41 @@ export function DogProfileForm({ initialData, isEdit = false }: DogProfileFormPr
                   <button
                     type="button"
                     onClick={() => setDietaryRestrictions(dietaryRestrictions.filter((_, idx) => idx !== i))}
+                    className="hover:text-gray-200"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <Label>Current Medications</Label>
+          <p className="text-sm text-gray-600 mb-2">List any medications your dog is currently taking (for interaction warnings)</p>
+          <div className="flex gap-2">
+            <Input
+              value={medicationInput}
+              onChange={(e) => setMedicationInput(e.target.value)}
+              placeholder="e.g., Prednisone, Rimadyl"
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addMedication())}
+            />
+            <Button type="button" onClick={addMedication} size="sm">
+              <PlusCircle className="w-4 h-4" />
+            </Button>
+          </div>
+          {medications?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {medications.map((medication, i) => (
+                <span
+                  key={i}
+                  className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm flex items-center gap-2"
+                >
+                  {medication}
+                  <button
+                    type="button"
+                    onClick={() => setMedications(medications.filter((_, idx) => idx !== i))}
                     className="hover:text-gray-200"
                   >
                     ×

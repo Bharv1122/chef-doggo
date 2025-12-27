@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
 import { generateRecipe } from '@/lib/recipe-generator';
 import { getHealthConditionRestrictions } from '@/lib/nutrition-utils';
+import { checkMedicationInteractions, getMedicationDisclaimerTier } from '@/lib/medication-interactions';
+import { calculateRecipeCost } from '@/lib/cost-estimation';
 
 const prisma = new PrismaClient();
 
@@ -76,10 +78,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Phase 1B: Check medication interactions
+    const medications = (dogProfile.medications as string[]) ?? [];
+    const medicationInteractions = checkMedicationInteractions(medications, result.ingredients);
+    const medicationTier = getMedicationDisclaimerTier(medicationInteractions);
+
+    // Phase 1B: Calculate cost estimation
+    const costEstimate = calculateRecipeCost(
+      result.ingredients,
+      7, // servingsPerBatch - typically 7 days worth
+      1, // servingsPerDay
+      60 // default kibbleCostPerMonth
+    );
+
+    // Determine disclaimer tier (priority: critical > therapeutic > medication > standard)
+    let disclaimerTier = 'standard';
+    if (healthConditions.some(c => c.toLowerCase().includes('kidney') || c.toLowerCase().includes('pancreatitis'))) {
+      disclaimerTier = 'therapeutic';
+    } else if (medicationTier) {
+      disclaimerTier = medicationTier;
+    }
+
     return NextResponse.json({
       recipe: result,
+      costEstimate,
+      medicationInteractions,
       healthRestrictions: restrictions,
-      disclaimerTier: 'standard',
+      disclaimerTier,
     });
   } catch (error) {
     console.error('Generate recipe error:', error);

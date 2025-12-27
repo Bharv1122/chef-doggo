@@ -80,6 +80,7 @@ model DogProfile {
   allergies             Json     @default("[]")
   healthConditions      Json     @default("[]")
   dietaryRestrictions   Json     @default("[]")
+  medications           Json     @default("[]")  // Phase 1B: Array of medication names
   nutritionPhilosophy   String?  // Balanced/High-Protein/Low-Fat/Grain-Free
   dailyCalories         Int?
   createdAt             DateTime @default(now())
@@ -103,6 +104,8 @@ model Recipe {
   supplements       Json     // Array of supplement objects with affiliate links
   servingSize       String
   transitionGuide   Json?    @default("[]")
+  recipeImageUrl    String?  // Phase 1B: AI-generated recipe image
+  costEstimate      Json?    // Phase 1B: {total, perServing, perDay, kibbleComparison}
   isFavorite        Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -115,13 +118,14 @@ model Recipe {
 }
 
 model DisclaimerAcknowledgment {
-  id              String   @id @default(cuid())
-  userId          String
-  dogProfileId    String?
-  recipeId        String?
-  disclaimerTier  String   // "standard" or "critical"
-  acknowledgedAt  DateTime @default(now())
-  ipAddress       String?
+  id                 String   @id @default(cuid())
+  userId             String
+  dogProfileId       String?
+  recipeId           String?
+  disclaimerTier     String   // "standard", "therapeutic", "critical", "medication", "holistic"
+  disclaimerVersion  String   @default("1.0")  // Phase 1B: Version tracking
+  acknowledgedAt     DateTime @default(now())
+  ipAddress          String?
 
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   dogProfile      DogProfile? @relation(fields: [dogProfileId], references: [id], onDelete: SetNull)
