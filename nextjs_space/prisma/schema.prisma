@@ -82,6 +82,8 @@ model DogProfile {
   dietaryRestrictions   Json     @default("[]")
   medications           Json     @default("[]")  // Phase 1B: Array of medication names
   nutritionPhilosophy   String?  // Balanced/High-Protein/Low-Fat/Grain-Free
+  useTCVM               Boolean  @default(false)  // Phase 1C: Use TCVM recommendations
+  useAyurveda           Boolean  @default(false)  // Phase 1C: Use Ayurvedic principles
   dailyCalories         Int?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

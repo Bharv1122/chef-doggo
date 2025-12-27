@@ -56,6 +56,8 @@ export async function POST(req: NextRequest) {
       dietaryRestrictions,
       medications,
       nutritionPhilosophy,
+      useTCVM,
+      useAyurveda,
     } = body;
 
     if (!name || !weight || !age || !size || !lifeStage || !activityLevel) {
@@ -85,6 +87,8 @@ export async function POST(req: NextRequest) {
         dietaryRestrictions: dietaryRestrictions ?? [],
         medications: medications ?? [],
         nutritionPhilosophy: nutritionPhilosophy ?? 'Balanced',
+        useTCVM: useTCVM ?? false,
+        useAyurveda: useAyurveda ?? false,
         dailyCalories,
       },
     });

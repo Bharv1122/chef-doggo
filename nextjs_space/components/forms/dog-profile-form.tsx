@@ -39,6 +39,8 @@ export function DogProfileForm({ initialData, isEdit = false }: DogProfileFormPr
       lifeStage: formData.get('lifeStage'),
       activityLevel: formData.get('activityLevel'),
       nutritionPhilosophy: formData.get('nutritionPhilosophy'),
+      useTCVM: formData.get('useTCVM') === 'on',
+      useAyurveda: formData.get('useAyurveda') === 'on',
       allergies,
       healthConditions,
       dietaryRestrictions,
@@ -342,6 +344,37 @@ export function DogProfileForm({ initialData, isEdit = false }: DogProfileFormPr
               ))}
             </div>
           )}
+        </div>
+
+        <div>
+          <Label>Holistic Medicine Preferences</Label>
+          <p className="text-sm text-gray-600 mb-3">Optional: Incorporate traditional healing systems into recipes</p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="useTCVM"
+                name="useTCVM"
+                defaultChecked={initialData?.useTCVM ?? false}
+                className="w-4 h-4 text-[#F97316] border-gray-300 rounded focus:ring-[#F97316]"
+              />
+              <label htmlFor="useTCVM" className="text-sm text-[#1C1917]">
+                Use TCVM (Traditional Chinese Veterinary Medicine) - Food energetics and constitution-based recommendations
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="useAyurveda"
+                name="useAyurveda"
+                defaultChecked={initialData?.useAyurveda ?? false}
+                className="w-4 h-4 text-[#F97316] border-gray-300 rounded focus:ring-[#F97316]"
+              />
+              <label htmlFor="useAyurveda" className="text-sm text-[#1C1917]">
+                Use Ayurveda - Dosha-based dietary principles for balance
+              </label>
+            </div>
+          </div>
         </div>
 
         <div>
