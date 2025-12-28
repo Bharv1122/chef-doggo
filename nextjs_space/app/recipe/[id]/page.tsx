@@ -9,6 +9,7 @@ import { ArrowLeft, Heart, Trash2, Loader2, ChefHat, ShoppingCart, AlertCircle }
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { PrintableRecipe } from '@/components/recipes/printable-recipe';
 
 export default function RecipeDetailPage() {
   const { data: session, status } = useSession() || {};
@@ -117,6 +118,7 @@ export default function RecipeDetailPage() {
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
+            <PrintableRecipe recipe={recipe} />
           </div>
         </div>
 

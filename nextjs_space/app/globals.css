@@ -102,3 +102,64 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #ea580c;
 }
+
+/* Print Styles */
+@media print {
+  /* Hide everything except the print-only content */
+  body > :not(.print-only) {
+    display: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  /* Page setup */
+  @page {
+    margin: 1cm;
+    size: letter;
+  }
+  
+  /* Prevent page breaks inside elements */
+  .page-break-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Force page break before element */
+  .page-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+  
+  /* Remove backgrounds for print */
+  * {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Ensure images print */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+  
+  /* Print-friendly table styling */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+  
+  th, td {
+    padding: 8px;
+    text-align: left;
+  }
+}

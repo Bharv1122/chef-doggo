@@ -9,6 +9,7 @@ import { calculateRecipeCost } from '@/lib/cost-estimation';
 import { determineTCVMConstitution, checkTCVMAlignment } from '@/lib/tcvm';
 import { determineDosha, checkAyurvedaAlignment, detectHolisticConflicts } from '@/lib/ayurveda';
 import { validateRecipeSafety, getSafetyReport } from '@/lib/safety-validation';
+import { getBreedHealthInfo } from '@/lib/breed-health-database';
 
 const prisma = new PrismaClient();
 
@@ -245,6 +246,15 @@ export async function POST(req: NextRequest) {
       disclaimerTier = medicationTier;
     }
 
+    // Get breed-specific health information
+    const breedHealthInfo = dogProfile.breed ? getBreedHealthInfo(dogProfile.breed) : null;
+    const breedWarnings = breedHealthInfo ? {
+      breed: breedHealthInfo.breed,
+      commonIssues: breedHealthInfo.commonIssues,
+      dietaryConsiderations: breedHealthInfo.dietaryConsiderations,
+      riskFactors: breedHealthInfo.riskFactors,
+    } : null;
+
     return NextResponse.json({
       recipe: result,
       costEstimate,
@@ -254,6 +264,7 @@ export async function POST(req: NextRequest) {
       holisticConflicts,
       thermalNatureAnalysis,
       safetyCheck: safetyCheck.isSafe ? null : safetyCheck,
+      breedWarnings,
       disclaimerTier,
     });
   } catch (error) {
