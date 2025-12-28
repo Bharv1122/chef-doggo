@@ -56,8 +56,10 @@ export async function POST(req: NextRequest) {
       dietaryRestrictions,
       medications,
       nutritionPhilosophy,
-      useTCVM,
-      useAyurveda,
+      tcvmConstitution,
+      tcvmThermalNature,
+      ayurvedicDosha,
+      conditionDiet,
     } = body;
 
     if (!name || !weight || !age || !size || !lifeStage || !activityLevel) {
@@ -86,9 +88,11 @@ export async function POST(req: NextRequest) {
         healthConditions: healthConditions ?? [],
         dietaryRestrictions: dietaryRestrictions ?? [],
         medications: medications ?? [],
-        nutritionPhilosophy: nutritionPhilosophy ?? 'Balanced',
-        useTCVM: useTCVM ?? false,
-        useAyurveda: useAyurveda ?? false,
+        nutritionPhilosophy: nutritionPhilosophy ?? null,
+        tcvmConstitution: tcvmConstitution ?? null,
+        tcvmThermalNature: tcvmThermalNature ?? null,
+        ayurvedicDosha: ayurvedicDosha ?? null,
+        conditionDiet: conditionDiet ?? null,
         dailyCalories,
       },
     });

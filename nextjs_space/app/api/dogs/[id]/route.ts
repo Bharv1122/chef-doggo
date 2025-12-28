@@ -76,6 +76,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       dietaryRestrictions,
       medications,
       nutritionPhilosophy,
+      tcvmConstitution,
+      tcvmThermalNature,
+      ayurvedicDosha,
+      conditionDiet,
     } = body;
 
     // Recalculate daily calories if weight, age, or activity changed
@@ -103,7 +107,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         healthConditions: healthConditions ?? existingDog.healthConditions,
         dietaryRestrictions: dietaryRestrictions ?? existingDog.dietaryRestrictions,
         medications: medications ?? existingDog.medications,
-        nutritionPhilosophy: nutritionPhilosophy ?? existingDog.nutritionPhilosophy,
+        nutritionPhilosophy: nutritionPhilosophy !== undefined ? nutritionPhilosophy : existingDog.nutritionPhilosophy,
+        tcvmConstitution: tcvmConstitution !== undefined ? tcvmConstitution : existingDog.tcvmConstitution,
+        tcvmThermalNature: tcvmThermalNature !== undefined ? tcvmThermalNature : existingDog.tcvmThermalNature,
+        ayurvedicDosha: ayurvedicDosha !== undefined ? ayurvedicDosha : existingDog.ayurvedicDosha,
+        conditionDiet: conditionDiet !== undefined ? conditionDiet : existingDog.conditionDiet,
         dailyCalories,
       },
     });

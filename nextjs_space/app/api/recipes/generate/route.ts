@@ -127,16 +127,23 @@ export async function POST(req: NextRequest) {
       60 // default kibbleCostPerMonth
     );
 
-    // Phase 1C: Holistic medicine integration (TCVM & Ayurveda)
+    // Phase 2: Enhanced holistic medicine integration (TCVM & Ayurveda)
     let holisticRecommendations: any = null;
     let holisticConflicts: any = null;
+    let thermalNatureAnalysis: any = null;
 
-    if (dogProfile.useTCVM || dogProfile.useAyurveda) {
+    const hasHolisticOptions = dogProfile.tcvmConstitution || dogProfile.tcvmThermalNature || dogProfile.ayurvedicDosha || dogProfile.conditionDiet;
+
+    if (hasHolisticOptions) {
       holisticRecommendations = {};
       const ingredients = ingredientsForChecking.map(ing => ing.name);
 
-      if (dogProfile.useTCVM) {
-        const tcvmConstitution = determineTCVMConstitution(healthConditions);
+      // TCVM Analysis
+      if (dogProfile.tcvmConstitution || dogProfile.tcvmThermalNature) {
+        // Use explicit constitution if provided, otherwise determine from health conditions
+        const tcvmConstitution = dogProfile.tcvmConstitution 
+          ? determineTCVMConstitution(healthConditions) 
+          : determineTCVMConstitution(healthConditions);
         
         // Check alignment for each ingredient
         const alignmentResults = ingredients.map(ingredient => ({
@@ -147,24 +154,36 @@ export async function POST(req: NextRequest) {
         const aligned = alignmentResults.filter(r => r.aligned);
         const misaligned = alignmentResults.filter(r => !r.aligned);
         
+        // Import thermal nature function
+        const { TCVM_FOOD_ENERGETICS } = require('@/lib/tcvm');
+        
+        // Add thermal nature for each ingredient
+        const ingredientThermalNature = ingredients.map(ing => ({
+          ingredient: ing,
+          thermalNature: TCVM_FOOD_ENERGETICS[ing.toLowerCase()] || 'neutral',
+        }));
+        
         holisticRecommendations.tcvm = {
-          constitution: tcvmConstitution,
+          constitution: tcvmConstitution.constitution,
+          thermalNature: dogProfile.tcvmThermalNature || 'auto-detected',
           aligned: aligned.map(r => r.ingredient),
           misaligned: misaligned.map(r => ({ ingredient: r.ingredient, note: r.note })),
+          ingredientThermalNature,
+          recommendations: tcvmConstitution.recommendations,
         };
+        
+        thermalNatureAnalysis = ingredientThermalNature;
       }
 
-      if (dogProfile.useAyurveda) {
+      // Ayurveda Analysis
+      if (dogProfile.ayurvedicDosha) {
         // Determine size based on weight
         let size = 'medium';
         if (dogProfile.weight < 25) size = 'small';
         else if (dogProfile.weight > 60) size = 'large';
 
-        const ayurvedaProfile = determineDosha(
-          size,
-          dogProfile.activityLevel,
-          healthConditions
-        );
+        // Always use determineDosha to get full profile structure
+        const ayurvedaProfile = determineDosha(size, dogProfile.activityLevel, healthConditions);
         
         // Check alignment for each ingredient
         const alignmentResults = ingredients.map(ingredient => ({
@@ -176,18 +195,36 @@ export async function POST(req: NextRequest) {
         const misaligned = alignmentResults.filter(r => !r.aligned);
         
         holisticRecommendations.ayurveda = {
-          profile: ayurvedaProfile,
+          dosha: ayurvedaProfile.primaryDosha,
           aligned: aligned.map(r => r.ingredient),
           misaligned: misaligned.map(r => ({ ingredient: r.ingredient, note: r.note })),
+          recommendations: ayurvedaProfile.recommendations,
+        };
+      }
+
+      // Condition-Specific Diet Notes
+      if (dogProfile.conditionDiet) {
+        const conditionDietNotes: Record<string, string> = {
+          'anti-inflammatory': 'Recipe focuses on omega-3 rich ingredients and antioxidants to reduce inflammation.',
+          'ketogenic': 'High-fat, low-carb recipe designed for ketogenic diet. Requires veterinary supervision.',
+          'renal': 'Low protein, low phosphorus recipe to support kidney health.',
+          'cardiac': 'Low sodium recipe to support heart health.',
+          'diabetic': 'High fiber, complex carbs for stable blood sugar levels.',
+          'elimination': 'Single protein source to identify food sensitivities.',
+        };
+        
+        holisticRecommendations.conditionDiet = {
+          type: dogProfile.conditionDiet,
+          notes: conditionDietNotes[dogProfile.conditionDiet] || 'Specialized therapeutic diet.',
         };
       }
 
       // Check for conflicts between TCVM and Ayurveda
-      if (dogProfile.useTCVM && dogProfile.useAyurveda) {
-        const tcvmMisaligned = holisticRecommendations.tcvm.misaligned.map((m: any) => m.ingredient);
-        const tcvmAligned = holisticRecommendations.tcvm.aligned;
-        const ayurvedaMisaligned = holisticRecommendations.ayurveda.misaligned.map((m: any) => m.ingredient);
-        const ayurvedaAligned = holisticRecommendations.ayurveda.aligned;
+      if ((dogProfile.tcvmConstitution || dogProfile.tcvmThermalNature) && dogProfile.ayurvedicDosha) {
+        const tcvmMisaligned = holisticRecommendations.tcvm?.misaligned.map((m: any) => m.ingredient) || [];
+        const tcvmAligned = holisticRecommendations.tcvm?.aligned || [];
+        const ayurvedaMisaligned = holisticRecommendations.ayurveda?.misaligned.map((m: any) => m.ingredient) || [];
+        const ayurvedaAligned = holisticRecommendations.ayurveda?.aligned || [];
         
         holisticConflicts = detectHolisticConflicts(
           tcvmMisaligned,
@@ -215,6 +252,7 @@ export async function POST(req: NextRequest) {
       healthRestrictions: restrictions,
       holisticRecommendations,
       holisticConflicts,
+      thermalNatureAnalysis,
       safetyCheck: safetyCheck.isSafe ? null : safetyCheck,
       disclaimerTier,
     });

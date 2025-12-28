@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { DogProfileForm } from '@/components/forms/dog-profile-form';
+import { DogProfileFormEnhanced } from '@/components/forms/dog-profile-form-enhanced';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -70,7 +70,7 @@ export default function EditDogPage() {
             Update your dog's information
           </p>
 
-          <DogProfileForm initialData={dog} isEdit={true} />
+          <DogProfileFormEnhanced initialData={dog} isEdit={true} />
         </div>
       </div>
     </div>

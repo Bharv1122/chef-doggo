@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { DogProfileForm } from '@/components/forms/dog-profile-form';
+import { DogProfileFormEnhanced } from '@/components/forms/dog-profile-form-enhanced';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -46,7 +46,7 @@ export default function NewDogPage() {
             Create a profile for your dog to generate personalized recipes
           </p>
 
-          <DogProfileForm />
+          <DogProfileFormEnhanced />
         </div>
       </div>
     </div>
