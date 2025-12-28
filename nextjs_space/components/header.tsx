@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ChefHat, Dog, BookOpen, LogOut, Menu, X } from 'lucide-react';
+import { ChefHat, Dog, BookOpen, LogOut, Menu, X, Calendar, Activity } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -27,6 +27,8 @@ export function Header() {
     { href: '/my-dogs', label: 'My Dogs', icon: Dog },
     { href: '/generate', label: 'Generate Recipe', icon: ChefHat },
     { href: '/recipes', label: 'Saved Recipes', icon: BookOpen },
+    { href: '/meal-planner', label: 'Meal Planner', icon: Calendar },
+    { href: '/nutrition-tracker', label: 'Nutrition Tracker', icon: Activity },
   ];
 
   return (
